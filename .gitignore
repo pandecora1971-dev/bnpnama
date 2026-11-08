@@ -33,7 +33,8 @@ scanner/.env
 *.tgz
 *.bak
 backups/
-data/
+/data/
+!public/data/
 *.sqlite
 *.sqlite-*
 
