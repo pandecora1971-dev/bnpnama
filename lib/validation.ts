@@ -45,9 +45,8 @@ export const reportSchema = z
   .object({
     category: z
       .string()
-      .default("")
-      .transform((v) => v || "অন্যান্য বিষয়াদি")
-      .refine((v) => categories.includes(v), "ক্যাটাগরি নির্বাচন করুন।"),
+      .min(1, "ক্যাটাগরি নির্বাচন করুন।")
+      .refine((v) => categories.includes(v), "সঠিক ক্যাটাগরি নির্বাচন করুন।"),
     title: z
       .string()
       .trim()
@@ -60,8 +59,8 @@ export const reportSchema = z
       .max(5000)
       .default("")
       .transform((v) => v || "বিস্তারিত বিবরণ দেওয়া হয়নি।"),
-    division: z.string().default(""),
-    district: z.string().default(""),
+    division: z.string().min(1, "বিভাগ নির্বাচন করুন।"),
+    district: z.string().min(1, "জেলা নির্বাচন করুন।"),
     upazila: z.string().default(""),
     ward: z.string().max(8).transform(normalizeWard)
       .refine((value) => value === "" || /^[1-9][0-9]{0,2}$/.test(value), "সঠিক ওয়ার্ড নম্বর দিন।").default(""),
@@ -87,15 +86,28 @@ export const reportSchema = z
     if (Boolean(v.ward) !== Boolean(v.wardArea)) {
       ctx.addIssue({ code: "custom", path: ["ward"], message: "ওয়ার্ড নম্বর ও স্থানীয় প্রশাসনিক এলাকার নাম একসঙ্গে দিন।" });
     }
-    if (v.division || v.district || v.upazila) {
-      const div = locations.divisions.find((d) => d.bn_name === v.division),
-        district = div?.districts.find((d) => d.bn_name === v.district);
-      if (!district || !district.upazilas.some((u) => u.bn_name === v.upazila))
+    const div = locations.divisions.find((d) => d.bn_name === v.division);
+    if (!div) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["division"],
+        message: "সঠিক বিভাগ নির্বাচন করুন।",
+      });
+    } else {
+      const district = div.districts.find((d) => d.bn_name === v.district);
+      if (!district) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["district"],
+          message: "সঠিক জেলা নির্বাচন করুন।",
+        });
+      } else if (v.upazila && !district.upazilas.some((u) => u.bn_name === v.upazila)) {
         ctx.addIssue({
           code: "custom",
           path: ["upazila"],
-          message: "সঠিক বিভাগ, জেলা ও উপজেলা/থানা নির্বাচন করুন।",
+          message: "সঠিক উপজেলা/থানা নির্বাচন করুন।",
         });
+      }
     }
     const allowed = conditionalFields[v.category] || [];
     for (const [key, value] of Object.entries(v.facts)) {

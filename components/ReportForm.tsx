@@ -177,13 +177,14 @@ export default function ReportForm() {
           </div>
           <div className="jwr-grid">
             <label>
-              রিপোর্ট ক্যাটাগরি (অতিরিক্ত)
+              রিপোর্ট ক্যাটাগরি
               <select
                 name="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                required
               >
-                <option value="">নির্বাচন করুন (অতিরিক্ত)</option>
+                <option value="">ক্যাটাগরি নির্বাচন করুন</option>
                 {categories.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
@@ -200,7 +201,8 @@ export default function ReportForm() {
             <LocationFields
               value={loc}
               onChange={setLoc}
-              required={false}
+              required={true}
+              requiredUpazila={false}
               showLabels={true}
               prefix="রিপোর্টের "
             />
@@ -280,7 +282,7 @@ export default function ReportForm() {
             ))}
           </div>
           <fieldset className="accused-section">
-            <legend>অভিযুক্ত ব্যক্তি বা ব্যক্তিবর্গ</legend>
+            <legend>দোষী ব্যক্তি বা ব্যক্তিবর্গ</legend>
             <p className="accused-helper">
               নাম জানা থাকলে লিখুন। পদবি, সংগঠনের সঙ্গে সম্পর্ক ও ঘটনায়
               সংশ্লিষ্টতার তথ্য দিন। এই অংশ শুধু পর্যালোচক দেখতে পারবেন।
@@ -288,12 +290,12 @@ export default function ReportForm() {
             {accusedRows.map((id, index) => (
               <div className="accused-person" key={id}>
                 <div className="accused-person-heading">
-                  <span>অভিযুক্ত {bn(index + 1)}</span>
+                  <span>দোষী {bn(index + 1)}</span>
                   {accusedRows.length > 1 && (
                     <button
                       type="button"
                       className="accused-remove"
-                      aria-label={`অভিযুক্ত ${bn(index + 1)} সরান`}
+                      aria-label={`দোষী ${bn(index + 1)} সরান`}
                       onClick={() =>
                         setAccusedRows((rows) =>
                           rows.filter((row) => row !== id),
@@ -305,7 +307,7 @@ export default function ReportForm() {
                   )}
                 </div>
                 <label>
-                  অভিযুক্তের নাম {bn(index + 1)}
+                  দোষীর নাম {bn(index + 1)}
                   <input
                     name={`accused_name_${id}`}
                     maxLength={120}
@@ -314,7 +316,7 @@ export default function ReportForm() {
                   />
                 </label>
                 <label>
-                  অভিযুক্তের প্রাসঙ্গিক তথ্য {bn(index + 1)}
+                  দোষীর প্রাসঙ্গিক তথ্য {bn(index + 1)}
                   <textarea
                     name={`accused_information_${id}`}
                     maxLength={2000}

@@ -9,16 +9,19 @@ export default function LocationFields({
   value,
   onChange,
   required = false,
+  requiredUpazila = false,
   showLabels = false,
   prefix = "",
 }: {
   value: LocationValue;
   onChange: (v: LocationValue) => void;
   required?: boolean;
+  requiredUpazila?: boolean;
   showLabels?: boolean;
   prefix?: string;
 }) {
   const visible = required || showLabels;
+  const isUpazilaRequired = requiredUpazila;
   const districts =
     catalog.find((d) => d.name === value.division)?.districts || [];
   const upazilas =
@@ -69,19 +72,23 @@ export default function LocationFields({
         </select>
       </label>
       <label className={visible ? "" : "filter-label"}>
-        <span className={visible ? "" : "sr-only"}>উপজেলা/থানা</span>
+        <span className={visible ? "" : "sr-only"}>
+          উপজেলা/থানা{visible && !isUpazilaRequired ? " (অতিরিক্ত)" : ""}
+        </span>
         <select
           name="upazila"
           aria-label={`${prefix}উপজেলা/থানা`}
           value={value.upazila}
           onChange={(e) => onChange({ ...value, upazila: e.target.value })}
           disabled={!value.district}
-          required={required}
+          required={isUpazilaRequired}
         >
           <option value="">
             {value.district
               ? visible
-                ? "উপজেলা/থানা নির্বাচন করুন"
+                ? isUpazilaRequired
+                  ? "উপজেলা/থানা নির্বাচন করুন"
+                  : "উপজেলা/থানা নির্বাচন করুন (অতিরিক্ত)"
                 : "সব উপজেলা/থানা"
               : "আগে জেলা নির্বাচন করুন"}
           </option>
