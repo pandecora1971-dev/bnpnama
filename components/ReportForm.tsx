@@ -177,41 +177,39 @@ export default function ReportForm() {
           </div>
           <div className="jwr-grid">
             <label>
-              রিপোর্ট ক্যাটাগরি
+              রিপোর্ট ক্যাটাগরি (অতিরিক্ত)
               <select
                 name="category"
-                required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">নির্বাচন করুন</option>
+                <option value="">নির্বাচন করুন (অতিরিক্ত)</option>
                 {categories.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
             </label>
             <label>
-              ঘটনার শিরোনাম
+              ঘটনার শিরোনাম (অতিরিক্ত)
               <input
                 name="title"
-                required
-                minLength={8}
                 maxLength={180}
-                placeholder="কী ঘটেছে, সংক্ষেপে লিখুন"
+                placeholder="কী ঘটেছে, সংক্ষেপে লিখুন (অতিরিক্ত)"
               />
             </label>
             <LocationFields
               value={loc}
               onChange={setLoc}
-              required
+              required={false}
+              showLabels={true}
               prefix="রিপোর্টের "
             />
             <label>
-              ইউনিয়ন, পৌরসভা বা সিটি কর্পোরেশন (ঐচ্ছিক)
+              ইউনিয়ন, পৌরসভা বা সিটি কর্পোরেশন (অতিরিক্ত)
               <input name="wardArea" maxLength={100} placeholder="শুধু প্রশাসনিক এলাকার নাম" />
             </label>
             <label>
-              ওয়ার্ড নম্বর (ঐচ্ছিক)
+              ওয়ার্ড নম্বর (অতিরিক্ত)
               <input name="ward" inputMode="numeric" pattern="[০-৯0-9]{1,3}" maxLength={3} placeholder="যেমন ৫" />
             </label>
             <label>
@@ -254,7 +252,7 @@ export default function ReportForm() {
               </small>
             </label>
             <label className="report-source-links">
-              সংবাদপত্র বা সংবাদ প্রতিবেদনের লিংক (ঐচ্ছিক)
+              সংবাদপত্র বা সংবাদ প্রতিবেদনের লিংক (অতিরিক্ত)
               <textarea
                 name="sourceLinks"
                 rows={3}
@@ -342,14 +340,12 @@ export default function ReportForm() {
             </small>
           </fieldset>
           <label>
-            ঘটনার বিস্তারিত
+            ঘটনার বিস্তারিত (অতিরিক্ত)
             <textarea
               name="description"
-              required
-              minLength={30}
               maxLength={5000}
               rows={6}
-              placeholder="ঘটনার সময়, স্থান, কী ঘটেছে এবং বিএনপি-সংশ্লিষ্টতার ভিত্তি লিখুন। অপ্রয়োজনীয় ব্যক্তিগত পরিচয় লিখবেন না।"
+              placeholder="ঘটনার সময়, স্থান, কী ঘটেছে এবং বিবরণ লিখুন (অতিরিক্ত)। অপ্রয়োজনীয় ব্যক্তিগত পরিচয় লিখবেন না।"
             />
           </label>
           <div className="jwr-hp" aria-hidden="true">

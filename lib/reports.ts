@@ -167,8 +167,10 @@ export async function publicStats(filter: ReportFilter): Promise<PublicStats> {
 }
 
 export type NewReport = z.infer<typeof reportSchema>;
-export const reportFingerprint = (d: Pick<NewReport, "category" | "title" | "description" | "district" | "incidentDate">) =>
-  hash([d.category, d.title.trim().toLowerCase(), d.description.trim().toLowerCase(), d.district, d.incidentDate].join("|"));
+export const reportFingerprint = (d: Pick<NewReport, "category" | "title" | "description" | "district" | "incidentDate">, id?: string) => {
+  const isGeneric = !d.title || d.title === "অনির্ধারিত শিরোনাম" || !d.description || d.description === "বিস্তারিত বিবরণ দেওয়া হয়নি।";
+  return hash([isGeneric ? (id || "") : "", d.category, d.title.trim().toLowerCase(), d.description.trim().toLowerCase(), d.district, d.incidentDate].join("|"));
+};
 export async function fingerprintExists(fingerprint: string) {
   const { rowCount } = await query("SELECT 1 FROM bnpnama.reports WHERE fingerprint=$1", [fingerprint]);
   return Boolean(rowCount);
@@ -178,7 +180,7 @@ export async function insertReport(client: Queryable, id: string, receiptHash: s
   await client.query(
     `INSERT INTO bnpnama.reports(id,receipt_hash,title,description,category,facts,display_category,display_facts,division,district,upazila,ward,ward_area,incident_date,created_at,updated_at,fingerprint)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$15,$16)`,
-    [id, receiptHash, d.title, d.description, d.category, JSON.stringify(d.facts), display.category, JSON.stringify(display.facts), d.division, d.district, d.upazila, d.ward, d.wardArea, d.incidentDate, now, reportFingerprint(d)],
+    [id, receiptHash, d.title, d.description, d.category, JSON.stringify(d.facts), display.category, JSON.stringify(display.facts), d.division, d.district, d.upazila, d.ward, d.wardArea, d.incidentDate, now, reportFingerprint(d, id)],
   );
   for (const [position, person] of d.accused.entries())
     await client.query("INSERT INTO bnpnama.accused(report_id,position,name,information) VALUES($1,$2,$3,$4)", [id, position, person.name, person.information]);

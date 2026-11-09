@@ -45,27 +45,31 @@ export const reportSchema = z
   .object({
     category: z
       .string()
+      .default("")
+      .transform((v) => v || "অন্যান্য বিষয়াদি")
       .refine((v) => categories.includes(v), "ক্যাটাগরি নির্বাচন করুন।"),
     title: z
       .string()
       .trim()
-      .min(8, "শিরোনাম কমপক্ষে ৮ অক্ষরের হতে হবে।")
-      .max(180),
+      .max(180)
+      .default("")
+      .transform((v) => v || "অনির্ধারিত শিরোনাম"),
     description: z
       .string()
       .trim()
-      .min(30, "ঘটনার বিস্তারিত কমপক্ষে ৩০ অক্ষরে লিখুন।")
-      .max(5000),
-    division: z.string(),
-    district: z.string(),
-    upazila: z.string(),
+      .max(5000)
+      .default("")
+      .transform((v) => v || "বিস্তারিত বিবরণ দেওয়া হয়নি।"),
+    division: z.string().default(""),
+    district: z.string().default(""),
+    upazila: z.string().default(""),
     ward: z.string().max(8).transform(normalizeWard)
       .refine((value) => value === "" || /^[1-9][0-9]{0,2}$/.test(value), "সঠিক ওয়ার্ড নম্বর দিন।").default(""),
     wardArea: z.string().trim().max(100)
       .refine((value) => !value || /^[\p{L}\p{M}\p{N} .()'-]+$/u.test(value), "শুধু ইউনিয়ন, পৌরসভা বা সিটি কর্পোরেশনের নাম লিখুন।").default(""),
     incidentDate: z
       .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "ঘটনার তারিখ দিন।")
       .refine(
         (v) =>
           !isNaN(Date.parse(v)) &&
@@ -83,14 +87,16 @@ export const reportSchema = z
     if (Boolean(v.ward) !== Boolean(v.wardArea)) {
       ctx.addIssue({ code: "custom", path: ["ward"], message: "ওয়ার্ড নম্বর ও স্থানীয় প্রশাসনিক এলাকার নাম একসঙ্গে দিন।" });
     }
-    const div = locations.divisions.find((d) => d.bn_name === v.division),
-      district = div?.districts.find((d) => d.bn_name === v.district);
-    if (!district || !district.upazilas.some((u) => u.bn_name === v.upazila))
-      ctx.addIssue({
-        code: "custom",
-        path: ["upazila"],
-        message: "সঠিক বিভাগ, জেলা ও উপজেলা/থানা নির্বাচন করুন।",
-      });
+    if (v.division || v.district || v.upazila) {
+      const div = locations.divisions.find((d) => d.bn_name === v.division),
+        district = div?.districts.find((d) => d.bn_name === v.district);
+      if (!district || !district.upazilas.some((u) => u.bn_name === v.upazila))
+        ctx.addIssue({
+          code: "custom",
+          path: ["upazila"],
+          message: "সঠিক বিভাগ, জেলা ও উপজেলা/থানা নির্বাচন করুন।",
+        });
+    }
     const allowed = conditionalFields[v.category] || [];
     for (const [key, value] of Object.entries(v.facts)) {
       const f = allowed.find((f) => f.key === key);

@@ -24,3 +24,13 @@ test("legacy categories merge without losing or changing stored report facts", (
  }
  assert.equal(normalizeCategory("সাইবার অপরাধ", {}).category, "সাইবার অপরাধ");
 });
+test("reportSchema allows submitting with ONLY date and declaration (all other fields optional)", () => {
+ const result = reportSchema.safeParse({ incidentDate: "2026-10-01", declaration: "1" });
+ assert.equal(result.success, true);
+ if (result.success) {
+  assert.equal(result.data.category, "অন্যান্য বিষয়াদি");
+  assert.equal(result.data.title, "অনির্ধারিত শিরোনাম");
+  assert.equal(result.data.description, "বিস্তারিত বিবরণ দেওয়া হয়নি।");
+ }
+ assert.equal(reportSchema.safeParse({ declaration: "1" }).success, false);
+});
