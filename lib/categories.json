@@ -129,7 +129,7 @@
       }
     }
   ],
-  "গণহত্যা ও নির্যাতন": [
+  "হত্যা ও নির্যাতন": [
     {
       "key": "victim_count",
       "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
@@ -166,7 +166,7 @@
       }
     }
   ],
-  "লোডশেডিং, তেল ও গ্যাস সংকট": [
+  "লোডশেডিং, তেল, গ্যাস ও সার সংকট": [
     {
       "key": "load_shedding_hours",
       "label": "দৈনিক গড়ে কত ঘণ্টা লোডশেডিং হয়?",
@@ -250,7 +250,7 @@
       }
     }
   ],
-  "সাংবাদিক হয়রানি ও মতপ্রকাশে বাধা": [
+  "সাংবাদিক হত্যাকাণ্ড, হয়রানি ও মতপ্রকাশে বাধা": [
     {
       "key": "victim_count",
       "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
@@ -706,6 +706,112 @@
         "required": false,
         "public": true,
         "unit": "টাকা"
+      }
+    }
+  ],
+  "বিএনপির দুঃশাসন": [
+    {
+      "key": "victim_count",
+      "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "পুলিশ হত্যা সম্পর্কিত তথ্য": [
+    {
+      "key": "victim_count",
+      "label": "কতজন পুলিশ সদস্য নিহত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "জুলাই জঙ্গি ও সন্ত্রাসী": [
+    {
+      "key": "involved_count",
+      "label": "কতজন সন্ত্রাসী বা জঙ্গি জড়িত ছিল?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "নাশকতা ও অগ্নিসন্ত্রাস": [
+    {
+      "key": "victim_count",
+      "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    },
+    {
+      "key": "loss_amount",
+      "label": "আনুমানিক আর্থিক ক্ষতির পরিমাণ কত?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "টাকা"
+      }
+    }
+  ],
+  "হাম শিশু মৃত্যু": [
+    {
+      "key": "victim_count",
+      "label": "কতজন শিশু মারা গেছে?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "'জয় বাংলা' স্লোগানের জন্য মারধর ও নির্যাতন": [
+    {
+      "key": "victim_count",
+      "label": "কতজন মারধর বা নির্যাতনের শিকার হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "শিক্ষা প্রতিষ্ঠানে বহিষ্কার ও মব": [
+    {
+      "key": "victim_count",
+      "label": "কতজন শিক্ষার্থী বা শিক্ষক ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "অন্যান্য বিষয়াদি": [
+    {
+      "key": "victim_count",
+      "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
       }
     }
   ]
