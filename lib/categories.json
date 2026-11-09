@@ -274,30 +274,6 @@
       }
     }
   ],
-  "প্রশাসনিক দুর্নীতি, বাণিজ্য ও প্রশাসনিক হয়রানি": [
-    {
-      "key": "bribery_amount",
-      "label": "ঘুষ বা দুর্নীতির আনুমানিক অর্থমূল্য কত?",
-      "type": "number",
-      "options": [],
-      "settings": {
-        "required": false,
-        "public": true,
-        "unit": "টাকা"
-      }
-    },
-    {
-      "key": "department_name",
-      "label": "সংশ্লিষ্ট দপ্তর, প্রতিষ্ঠান বা প্রকল্পের নাম",
-      "type": "text",
-      "options": [],
-      "settings": {
-        "required": false,
-        "public": true,
-        "unit": ""
-      }
-    }
-  ],
   "ধর্মীয় উগ্রতা ও জঙ্গিবাদী বক্তব্য": [
     {
       "key": "victim_count",
