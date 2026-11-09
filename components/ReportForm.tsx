@@ -225,7 +225,7 @@ export default function ReportForm() {
               />
             </label>
             <label>
-              প্রমাণ সংযুক্ত করুন
+              প্রমাণ সংযুক্ত করুন (অতিরিক্ত)
               <input
                 type="file"
                 name="evidence"
@@ -268,7 +268,7 @@ export default function ReportForm() {
             </label>
             {(conditionalFields[category] || []).map((f) => (
               <label key={`${category}-${f.key}`}>
-                {f.label}
+                {f.label} (অতিরিক্ত)
                 <input
                   name={`fact_${f.key}`}
                   type={f.type === "number" ? "number" : "text"}
@@ -282,7 +282,7 @@ export default function ReportForm() {
             ))}
           </div>
           <fieldset className="accused-section">
-            <legend>দোষী ব্যক্তি বা ব্যক্তিবর্গ</legend>
+            <legend>দোষী ব্যক্তি বা ব্যক্তিবর্গ (অতিরিক্ত)</legend>
             <p className="accused-helper">
               নাম জানা থাকলে লিখুন। পদবি, সংগঠনের সঙ্গে সম্পর্ক ও ঘটনায়
               সংশ্লিষ্টতার তথ্য দিন। এই অংশ শুধু পর্যালোচক দেখতে পারবেন।
