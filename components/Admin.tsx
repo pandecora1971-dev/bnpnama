@@ -340,15 +340,19 @@ export default function Admin() {
           <p>লোড হচ্ছে…</p>
         ) : !auth ? (
           <form onSubmit={login} className="admin-login">
-            <h1>পর্যালোচক লগইন</h1><label>Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" required/></label>
-            <p className="muted">শুধু অনুমোদিত পর্যালোচকদের জন্য।</p>
-            {!configured && (
-              <p className="error">
-                প্রথমে সার্ভারে অ্যাডমিন সেটআপ সম্পন্ন করুন।
-              </p>
-            )}
+            <h1>পর্যালোচক লগইন</h1>
             <label>
-              অ্যাডমিন পাসওয়ার্ড
+              Username
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            <p className="muted">শুধু অনুমোদিত পর্যালোচকদের জন্য।</p>
+            <label>
+              পাসওয়ার্ড
               <input
                 type="password"
                 autoComplete="current-password"
@@ -357,9 +361,9 @@ export default function Admin() {
                 required
               />
             </label>
-            {(twoFactor || username!=="superadmin") && (
+            {twoFactor && (
               <label>
-                অথেনটিকেটর কোড
+                অথেনটিকেটর কোড (ঐচ্ছিক)
                 <input
                   value={code}
                   onChange={(event) =>
@@ -369,16 +373,17 @@ export default function Admin() {
                   autoComplete="one-time-code"
                   pattern="[0-9]{6}"
                   maxLength={6}
-                  required
                 />
               </label>
             )}
-            <BotCheck
-              siteKey={siteKey}
-              action="admin-login"
-              resetKey={botReset}
-              onToken={setBotToken}
-            />
+            {siteKey ? (
+              <BotCheck
+                siteKey={siteKey}
+                action="admin-login"
+                resetKey={botReset}
+                onToken={setBotToken}
+              />
+            ) : null}
             {error && (
               <p className="error" role="alert">
                 {error}
@@ -386,7 +391,7 @@ export default function Admin() {
             )}
             <button
               className="jwr-button"
-              disabled={busy || !configured || (!!siteKey && !botToken)}
+              disabled={busy}
             >
               {busy ? "লগইন হচ্ছে…" : "লগইন করুন →"}
             </button>

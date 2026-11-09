@@ -75,16 +75,26 @@ export async function isAdmin() {
 export function sameOrigin(req: Request) {
   if (req.headers.get("sec-fetch-site") === "cross-site") return false;
   const origin = req.headers.get("origin");
-  if (!origin) return process.env.NODE_ENV !== "production";
+  if (!origin) return true;
   try {
-    if (process.env.PUBLIC_ORIGIN) return origin === process.env.PUBLIC_ORIGIN;
-    if (process.env.NODE_ENV === "production") return false;
-    const parsed = new URL(origin);
-    return (
-      ["http:", "https:"].includes(parsed.protocol) &&
-      (origin === new URL(req.url).origin ||
-        parsed.host === req.headers.get("host"))
-    );
+    const originUrl = new URL(origin);
+    const reqHost = req.headers.get("host") || new URL(req.url).host;
+    if (originUrl.host === reqHost) return true;
+    if (process.env.PUBLIC_ORIGIN) {
+      try {
+        if (originUrl.host === new URL(process.env.PUBLIC_ORIGIN).host) return true;
+      } catch {}
+    }
+    if (
+      originUrl.host.endsWith(".vercel.app") ||
+      originUrl.host === "bnpnama.digital" ||
+      originUrl.host === "www.bnpnama.digital" ||
+      originUrl.hostname === "localhost" ||
+      originUrl.hostname === "127.0.0.1"
+    ) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
