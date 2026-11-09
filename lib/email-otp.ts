@@ -22,7 +22,7 @@ export async function sendOtpEmail(email: string, code: string): Promise<boolean
       },
       body: JSON.stringify({
         from,
-        to: [email],
+        to: [email.toLowerCase().trim()],
         subject: `আপনার BNPNAMA অ্যাডমিন লগইন ওটিপি: ${code}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 10px; background-color: #ffffff;">
@@ -80,3 +80,4 @@ export async function verifyEmailOtp(account: string, code: string): Promise<boo
   await query("DELETE FROM bnpnama.rate_limits WHERE bucket = $1", [bucketKey]);
   return true;
 }
+
