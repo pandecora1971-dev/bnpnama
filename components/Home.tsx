@@ -58,8 +58,10 @@ const icons: Record<string, typeof ShieldAlert> = {
   "পুলিশ হত্যা সম্পর্কিত তথ্য": ShieldAlert,
   "জুলাই জঙ্গি ও সন্ত্রাসী": Flag,
   "নাশকতা ও অগ্নিসন্ত্রাস": Swords,
-  "হাম শিশু মৃত্যু": HeartPulse,
-  "'জয় বাংলা' স্লোগানের জন্য মারধর ও নির্যাতন": ShieldAlert,
+  "প্রশাসনিক হয়রানি ও মিথ্যা মামলা": Flag,
+  "হাম ও শিশু মৃত্যু": HeartPulse,
+  "জয় বাংলা' স্লোগানের জন্য মারধর ও নির্যাতন": ShieldAlert,
+  "ইতিহাস বিকৃতি ও মিথ্যাচার": Flag,
   "শিক্ষা প্রতিষ্ঠানে বহিষ্কার ও মব": Briefcase,
   "মব সৃষ্টি, গণপিটুনি, বাড়িঘর লুটপাট ও অগ্নিসংযোগ": Swords,
   "খুন, অপহরণ, গুম ও হত্যাচেষ্টা": Skull,
@@ -82,7 +84,7 @@ const icons: Record<string, typeof ShieldAlert> = {
   "ধর্মীয় উগ্রতা ও জঙ্গিবাদী বক্তব্য": Flag,
   "মাদকসংক্রান্ত অপরাধ": FlaskConical,
   "সংখ্যালঘুদের উপর হামলা ও উপাসনালয় ভাঙচুর": Hand,
-  "ইন্টারনেট শাটডাউন ও ডিজিটাল অধিকার লঙ্ঘন": Monitor,
+  "বিএনপি সম্পর্কে সাধারণ মানুষের প্রতিক্রিয়া": Monitor,
   "অন্যান্য বিষয়াদি": Files,
 };
 const emptyLoc = { division: "", district: "", upazila: "" };
@@ -195,8 +197,8 @@ export default function Home() {
     [showDemo, setShowDemo] = useState(false),
     [live, setLive] = useState(false);
   const [modal, setModal] = useState<"report" | "privacy" | "track" | null>(
-      null,
-    ),
+    null,
+  ),
     [detail, setDetail] = useState<Report | null>(null),
     [menu, setMenu] = useState(false);
   const [draft, setDraft] = useState<Filters>(emptyFilters),
@@ -304,7 +306,7 @@ export default function Home() {
       .then((d) => {
         if (d?.report) setDetail(d.report);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
   async function loadMore() {
     if (showDemo) {
@@ -358,10 +360,10 @@ export default function Home() {
     setTrackResult(null);
     try {
       const r = await fetch("/api/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ receipt: trackCode.trim() }),
-        }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receipt: trackCode.trim() }),
+      }),
         d = await r.json();
       if (!r.ok) throw Error(d.error);
       setTrackResult(d);
@@ -935,7 +937,7 @@ export default function Home() {
       )}
       {detail && (
         <Modal title="রিপোর্টের বিস্তারিত" onClose={() => setDetail(null)}>
-          <ReportCard report={detail} onOpen={() => {}} detail />
+          <ReportCard report={detail} onOpen={() => { }} detail />
           <div className="report-facts">
             {(conditionalFields[detail.category] || [])
               .filter((f) => detail.facts[f.key])
