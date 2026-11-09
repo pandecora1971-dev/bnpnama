@@ -27,12 +27,13 @@ export async function POST(req:Request){
   if(!b)return json({error:'অনুরোধ সঠিক নয়।'},400);
   if(b.action==='create'){
    const username=typeof b.username==='string'?b.username.trim().toLowerCase():'';
-   const secret=typeof b.secret==='string'?b.secret.replace(/\s/g,'').toUpperCase():'';
-   if(!/^[a-z0-9_-]{3,40}$/.test(username)||username==='superadmin'||typeof b.password!=='string'||b.password.length<14||b.password.length>128||!/^[A-Z2-7]{32,128}$/.test(secret)||typeof b.code!=='string'||totpStep(secret,b.code)===null)return json({error:'Username, ১৪ অক্ষরের password এবং পৃথক authenticator-এর secret/code সঠিকভাবে দিন।'},400);
+   if(!/^[a-z0-9_-]{3,40}$/.test(username)||username==='superadmin'||typeof b.password!=='string'||b.password.length<14||b.password.length>128)
+    return json({error:'Username এবং কমপক্ষে ১৪ অক্ষরের password সঠিকভাবে দিন।'},400);
+   const dummySecret='JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
    const encoded=await encodePassword(b.password),id=random();
    try{
     await transaction(async client=>{
-     await client.query('INSERT INTO bnpnama.staff(id,username,totp_secret,password_hash,created_at) VALUES($1,$2,$3,$4,$5)',[id,username,sealSecret(secret),encoded,new Date().toISOString()]);
+     await client.query('INSERT INTO bnpnama.staff(id,username,totp_secret,password_hash,created_at) VALUES($1,$2,$3,$4,$5)',[id,username,sealSecret(dummySecret),encoded,new Date().toISOString()]);
      await audit(actor,'moderator.created',id,username,client);
     });
    }catch(error){
