@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     // Verify Superadmin password
     if (!(await passwordValid(password))) return json({ error: "পাসওয়ার্ড সঠিক নয়।" }, 401);
 
-    const adminEmail = process.env.ADMIN_EMAIL || "Pandecora1971@gmail.com";
+    const adminEmail = process.env.ADMIN_EMAIL || "";
     const resendActive = Boolean(process.env.RESEND_API_KEY);
 
     // If Resend is configured, handle email OTP

@@ -1,5 +1,5 @@
 # Admin team
-Open /admin and use the existing owner password and authenticator with username superadmin.
+Open the admin panel and use the existing owner password and authenticator with username superadmin.
 
 Only superadmin can create, disable or re-enable moderators and view the activity log. Moderators can edit, publish and unpublish reports and download evidence. Disabling or re-enabling an account revokes its sessions. The audit records successful sign-ins, sign-outs, account changes, report review changes and evidence downloads. It stores identifiers and change flags, not report bodies, credentials or authenticator codes.
 
