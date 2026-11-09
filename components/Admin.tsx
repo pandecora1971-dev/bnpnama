@@ -225,6 +225,8 @@ export default function Admin() {
     [twoFactor, setTwoFactor] = useState(false);
   const [auth, setAuth] = useState<boolean | null>(null),
     [configured, setConfigured] = useState(true),
+    [otpPending, setOtpPending] = useState(false),
+    [otpMessage, setOtpMessage] = useState(""),
     [password, setPassword] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -295,14 +297,20 @@ export default function Admin() {
     setError("");
     try {
       const r = await fetch("/api/admin/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password, code, botToken, username }),
-        }),
-        d = await r.json();
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, code, botToken, username, action: otpPending ? "verify_otp" : "login" }),
+      });
+      const d = await r.json();
       if (!r.ok) throw Error(d.error);
+      if (d.otpRequired) {
+        setOtpPending(true);
+        setOtpMessage(d.message || "আপনার ইমেইলে ওটিপি পাঠানো হয়েছে।");
+        return;
+      }
       setPassword("");
       setCode("");
+      setOtpPending(false);
       setAuth(true);
       setRole(d.actor?.role || "");
     } catch (e) {
@@ -341,60 +349,82 @@ export default function Admin() {
         ) : !auth ? (
           <form onSubmit={login} className="admin-login">
             <h1>পর্যালোচক লগইন</h1>
-            <label>
-              Username
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-              />
-            </label>
-            <p className="muted">শুধু অনুমোদিত পর্যালোচকদের জন্য।</p>
-            <label>
-              পাসওয়ার্ড
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {twoFactor && (
-              <label>
-                অথেনটিকেটর কোড (ঐচ্ছিক)
-                <input
-                  value={code}
-                  onChange={(event) =>
-                    setCode(event.target.value.replace(/\D/g, ""))
-                  }
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                />
-              </label>
+            {!otpPending ? (
+              <>
+                <label>
+                  Username
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    required
+                  />
+                </label>
+                <p className="muted">শুধু অনুমোদিত পর্যালোচকদের জন্য।</p>
+                <label>
+                  পাসওয়ার্ড
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </label>
+                {error && (
+                  <p className="error" role="alert">
+                    {error}
+                  </p>
+                )}
+                <button
+                  className="jwr-button"
+                  disabled={busy}
+                >
+                  {busy ? "যাচাই হচ্ছে…" : "লগইন করুন →"}
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ background: "#f0fdf4", border: "1px solid #86efac", padding: "12px", borderRadius: "6px", color: "#166534", marginBottom: "16px", fontSize: "14px" }}>
+                  ✉️ {otpMessage}
+                </div>
+                <label>
+                  ইমেইলে আসা ৬-সংখ্যার ওটিপি (OTP) কোড
+                  <input
+                    value={code}
+                    onChange={(event) =>
+                      setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="যেমন: 123456"
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
+                </label>
+                {error && (
+                  <p className="error" role="alert">
+                    {error}
+                  </p>
+                )}
+                <button
+                  className="jwr-button"
+                  disabled={busy || code.length !== 6}
+                >
+                  {busy ? "যাচাই হচ্ছে…" : "লগইন সম্পূর্ণ করুন →"}
+                </button>
+                <p style={{ marginTop: "14px", fontSize: "13px" }}>
+                  <button
+                    type="button"
+                    style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                    onClick={() => { setOtpPending(false); setCode(""); setError(""); }}
+                  >
+                    ← আগের ধাপে ফিরে যান
+                  </button>
+                </p>
+              </>
             )}
-            {siteKey ? (
-              <BotCheck
-                siteKey={siteKey}
-                action="admin-login"
-                resetKey={botReset}
-                onToken={setBotToken}
-              />
-            ) : null}
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
-            <button
-              className="jwr-button"
-              disabled={busy}
-            >
-              {busy ? "লগইন হচ্ছে…" : "লগইন করুন →"}
-            </button>
           </form>
         ) : (
           <>
