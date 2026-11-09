@@ -36,7 +36,6 @@ import {
   type PublicStats,
   type Report,
 } from "@/lib/shared";
-import { demoReports } from "@/lib/demo";
 import Modal from "./Modal";
 import ReportForm from "./ReportForm";
 import LocationFields from "./LocationFields";
@@ -171,20 +170,6 @@ function filterQuery(filter: Filters) {
     if (typeof value === "string" && value.trim()) params.set(key, value.trim());
   return params;
 }
-function matchesFilter(r: Report, filter: Filters) {
-  return (
-    (!filter.category || r.category === filter.category) &&
-    (!filter.division || r.division === filter.division) &&
-    (!filter.district || r.district === filter.district) &&
-    (!filter.upazila || r.upazila === filter.upazila) &&
-    (!filter.ward || r.ward === normalizeWard(filter.ward)) &&
-    (!filter.wardArea || (r.wardArea || "").toLowerCase().includes(filter.wardArea.trim().toLowerCase())) &&
-    (!filter.from || r.incidentDate >= filter.from) &&
-    (!filter.to || r.incidentDate <= filter.to) &&
-    (!filter.q || [r.title, r.description, r.category, r.district, r.upazila].join(" ").includes(filter.q.trim()))
-  );
-}
-const demoStats = statsFromReports(demoReports);
 export default function Home() {
   const [list, setList] = useState<Report[]>([]),
     [nextCursor, setNextCursor] = useState<string | null>(null),
@@ -194,7 +179,6 @@ export default function Home() {
     [revision, setRevision] = useState<number | null>(null),
     [listError, setListError] = useState(""),
     [loadingMore, setLoadingMore] = useState(false),
-    [showDemo, setShowDemo] = useState(false),
     [live, setLive] = useState(false);
   const [modal, setModal] = useState<"report" | "privacy" | "track" | null>(
     null,
@@ -239,7 +223,7 @@ export default function Home() {
   const view = useRef({ filter: emptyFilters as Filters, limit: PAGE });
   view.current = { filter, limit };
   const openDetail = useRef<string | null>(null);
-  openDetail.current = detail && !detail.demo ? detail.id : null;
+  openDetail.current = detail ? detail.id : null;
   useEffect(() => {
     let stopped = false, timer: ReturnType<typeof setTimeout> | undefined, failures = 0, current: number | null = null, lastFull = 0;
     const poll = async () => {
@@ -252,14 +236,11 @@ export default function Home() {
         // Supports do not bump the revision, so counts also refresh on a slow timer.
         const due = Date.now() - lastFull > FULL_REFRESH_MS;
         if (next !== current || due) {
-          const first = current === null;
           current = next;
           lastFull = Date.now();
           setRevision(next);
-          const fresh = await loadStats(next);
+          await loadStats(next);
           await loadList(next, view.current.filter, view.current.limit);
-          if (first && fresh.total === 0) setShowDemo(true);
-          if (fresh.total > 0) setShowDemo(false);
           const open = openDetail.current;
           if (open) {
             const response = await fetch(`/api/reports/${open}?rev=${next}`);
@@ -309,10 +290,6 @@ export default function Home() {
       .catch(() => { });
   }, []);
   async function loadMore() {
-    if (showDemo) {
-      setLimit((l) => l + PAGE);
-      return;
-    }
     if (!nextCursor || revision === null) return;
     setLoadingMore(true);
     try {
@@ -332,14 +309,12 @@ export default function Home() {
       setLoadingMore(false);
     }
   }
-  const summary = showDemo ? demoStats : stats;
+  const summary = stats;
   const totalReports = summary?.total ?? 0;
   const latest = summary?.latest;
-  const demoFiltered = showDemo ? demoReports.filter((r) => matchesFilter(r, filter)) : [];
-  const shown = showDemo ? demoFiltered.slice(0, limit) : list;
-  const shownTotal = showDemo ? demoFiltered.length : total;
-  const hasMore = showDemo ? demoFiltered.length > limit : Boolean(nextCursor);
-  const realCount = stats?.total ?? 0;
+  const shown = list;
+  const shownTotal = total;
+  const hasMore = Boolean(nextCursor);
   const categoryRows = categories
     .map((c) => [c, summary?.categories[c] || 0] as [string, number])
     .sort((a, b) => b[1] - a[1]);
@@ -479,7 +454,7 @@ export default function Home() {
         <div className="jwr-shell">
           <div className="jwr-live-summary">
             <div>
-              <small>সর্বশেষ প্রকাশিত {showDemo ? "নমুনা" : "রিপোর্ট"}</small>
+              <small>সর্বশেষ প্রকাশিত রিপোর্ট</small>
               <strong>
                 {latest?.category || "প্রথম রিপোর্টের অপেক্ষায়"}
               </strong>
@@ -490,12 +465,10 @@ export default function Home() {
               </span>
             </div>
             <div>
-              <small>মোট {showDemo ? "নমুনা রিপোর্ট" : "রিপোর্ট"}</small>
+              <small>মোট রিপোর্ট</small>
               <strong className="summary-number">{bn(totalReports)}</strong>
               <span className="jwr-summary-meta">
-                {showDemo
-                  ? "প্রদর্শনীর কাল্পনিক তথ্য"
-                  : "সর্বমোট প্রকাশিত অভিযোগ"}
+                সর্বমোট প্রকাশিত অভিযোগ
               </span>
             </div>
             <div>
@@ -540,32 +513,6 @@ export default function Home() {
             >
               লাইভ রিপোর্ট
             </Title>
-            {showDemo ? (
-              <div className="demo-notice">
-                <span>
-                  প্রদর্শনী মোড · নিচের সব রিপোর্ট কাল্পনিক নমুনা, বাস্তব অভিযোগ
-                  নয়।
-                </span>
-                <button
-                  onClick={() => {
-                    setShowDemo(false);
-                    setFilter(emptyFilters);
-                    setDraft(emptyFilters);
-                  }}
-                >
-                  বাস্তব রিপোর্ট দেখুন →
-                </button>
-              </div>
-            ) : (
-              stats !== null && realCount === 0 && (
-                <div className="demo-notice">
-                  <span>এখনও কোনো বাস্তব রিপোর্ট প্রকাশিত হয়নি।</span>
-                  <button onClick={() => setShowDemo(true)}>
-                    নমুনা দেখুন →
-                  </button>
-                </div>
-              )
-            )}
             <div className="jwr-home-report-layout">
               <div className="jwr-live">
                 <form
@@ -630,7 +577,7 @@ export default function Home() {
                 {Object.values(filter).some(Boolean) && (
                   <div className="filter-summary">
                     <span>
-                      {bn(shownTotal)}{totalCapped && !showDemo ? "+" : ""}টি রিপোর্ট পাওয়া গেছে{" "}
+                      {bn(shownTotal)}{totalCapped ? "+" : ""}টি রিপোর্ট পাওয়া গেছে{" "}
                       {filter.category && `· ${filter.category}`}
                     </span>
                     <button
@@ -705,7 +652,7 @@ export default function Home() {
                   </button>
                 ))}
                 <div className="jwr-sidebar-total">
-                  <small>মোট {showDemo ? "নমুনা রিপোর্ট" : "রিপোর্ট"}</small>
+                  <small>মোট রিপোর্ট</small>
                   <strong>{bn(totalReports)}</strong>
                 </div>
               </aside>
@@ -755,18 +702,12 @@ export default function Home() {
         <section className="jwr-home-map" id="map">
           <div className="jwr-shell">
             <Title>মানচিত্রে রিপোর্ট খুঁজুন</Title>
-            <ReportMap demo={showDemo ? demoReports : null} revision={revision} overall={summary} />
+            <ReportMap demo={null} revision={revision} overall={summary} />
           </div>
         </section>
         <section className="jwr-home-data" id="statistics">
           <div className="jwr-shell">
-            <Title
-              note={
-                showDemo
-                  ? "প্রদর্শনীর নমুনা তথ্য"
-                  : "শুধু প্রকাশিত অভিযোগের হিসাব"
-              }
-            >
+            <Title note="শুধু প্রকাশিত অভিযোগের হিসাব">
               অভিযোগের চিত্র
             </Title>
             <div className="jwr-stats">
@@ -954,27 +895,23 @@ export default function Home() {
               ))}
           </div>
           <p className="detail-disclaimer">
-            {detail.demo
-              ? "এটি সম্পূর্ণ কাল্পনিক নমুনা।"
-              : "এটি জনসাধারণের জমা দেওয়া অভিযোগ। প্রকাশ অপরাধ প্রমাণ করে না। সংযুক্ত প্রমাণ সর্বসাধারণের জন্য উন্মুক্ত নয়।"}
+            এটি জনসাধারণের জমা দেওয়া অভিযোগ। প্রকাশ অপরাধ প্রমাণ করে না। সংযুক্ত প্রমাণ সর্বসাধারণের জন্য উন্মুক্ত নয়।
           </p>
-          {!detail.demo && (
-            <button
-              className="jwr-outline-button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(
-                    `${location.origin}/?report=${detail.id}`,
-                  );
-                  setShare(true);
-                } catch {
-                  setShare(false);
-                }
-              }}
-            >
-              {share ? "লিংক কপি হয়েছে ✓" : "রিপোর্টের লিংক কপি করুন ↗"}
-            </button>
-          )}
+          <button
+            className="jwr-outline-button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  `${location.origin}/?report=${detail.id}`,
+                );
+                setShare(true);
+              } catch {
+                setShare(false);
+              }
+            }}
+          >
+            {share ? "লিংক কপি হয়েছে ✓" : "রিপোর্টের লিংক কপি করুন ↗"}
+          </button>
         </Modal>
       )}
     </div>
