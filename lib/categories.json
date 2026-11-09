@@ -643,6 +643,50 @@
       }
     }
   ],
+  "সংখ্যালঘুদের উপর হামলা ও উপাসনালয় ভাঙচুর": [
+    {
+      "key": "victim_count",
+      "label": "কতজন ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    },
+    {
+      "key": "worship_place_count",
+      "label": "কতটি উপাসনালয় ক্ষতিগ্রস্ত বা ভাঙচুর হয়েছে?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "টি"
+      }
+    }
+  ],
+  "ইন্টারনেট শাটডাউন ও ডিজিটাল অধিকার লঙ্ঘন": [
+    {
+      "key": "shutdown_hours",
+      "label": "কত ঘণ্টা বা কত দিন ইন্টারনেট বন্ধ ছিল?",
+      "type": "text",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "ঘণ্টা/দিন"
+      }
+    },
+    {
+      "key": "affected_area",
+      "label": "কোন এলাকায় বা কোন প্ল্যাটফর্মে সেবা বন্ধ ছিল?",
+      "type": "text",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "এলাকা/প্ল্যাটফর্ম"
+      }
+    }
+  ],
   "টেন্ডারবাজি": [
     {
       "key": "department_name",
