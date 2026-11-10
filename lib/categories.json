@@ -779,6 +779,42 @@
       }
     }
   ],
+  "ধানমন্ডি ৩২ নম্বরে ভাঙচুরের ঘটনায় জামায়াতের সংশ্লিষ্টতার অভিযোগ": [
+    {
+      "key": "victim_count",
+      "label": "কতজন ক্ষতিগ্রস্ত বা হতাহত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "শিল্পকারখানা বন্ধ ও শ্রমিক ছাঁটাই": [
+    {
+      "key": "victim_count",
+      "label": "কতজন শ্রমিক ক্ষতিগ্রস্ত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
+  "জেল হত্যা ও নির্যাতন": [
+    {
+      "key": "victim_count",
+      "label": "কতজন নিহত বা নির্যাতিত হয়েছেন?",
+      "type": "number",
+      "settings": {
+        "required": false,
+        "public": true,
+        "unit": "জন"
+      }
+    }
+  ],
   "অন্যান্য বিষয়াদি": [
     {
       "key": "victim_count",
