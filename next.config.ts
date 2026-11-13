@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 // Browsers upload directly to this one origin. Bucket contents stay private.
 function storageOrigin() {
-  const endpoint = process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "");
+  const endpoint = process.env.R2_ENDPOINT?.trim() || (process.env.R2_ACCOUNT_ID?.trim() ? `https://${process.env.R2_ACCOUNT_ID.trim()}.r2.cloudflarestorage.com` : "");
   try {
     return endpoint ? new URL(endpoint).origin : "";
   } catch {

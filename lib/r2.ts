@@ -10,12 +10,15 @@ export class R2Error extends Error {
   }
 }
 type Config = { endpoint: string; bucket: string; accessKeyId: string; secretAccessKey: string };
+// Values pasted into a hosting dashboard often carry a stray space or newline, which silently
+// breaks every signature (R2 answers SignatureDoesNotMatch), so read them trimmed.
+const env = (name: string) => (process.env[name] || "").trim();
 export function r2Config(bucketOverride?: string): Config {
-  const account = process.env.R2_ACCOUNT_ID;
-  const endpoint = (process.env.R2_ENDPOINT || (account ? `https://${account}.r2.cloudflarestorage.com` : "")).replace(/\/$/, "");
-  const bucket = bucketOverride || process.env.R2_BUCKET || "";
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID || "";
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || "";
+  const account = env("R2_ACCOUNT_ID");
+  const endpoint = (env("R2_ENDPOINT") || (account ? `https://${account}.r2.cloudflarestorage.com` : "")).replace(/\/$/, "");
+  const bucket = bucketOverride || env("R2_BUCKET");
+  const accessKeyId = env("R2_ACCESS_KEY_ID");
+  const secretAccessKey = env("R2_SECRET_ACCESS_KEY");
   if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) throw new R2Error(503, "configuration", "R2_NOT_CONFIGURED");
   return { endpoint, bucket, accessKeyId, secretAccessKey };
 }
