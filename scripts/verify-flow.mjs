@@ -156,7 +156,6 @@ try {
   // --- Anonymous submission with direct upload ---
   const r = report();
   const refused = new Client();
-  assert.equal((await createIntent(refused, [], r, { botToken: "bad:report" })).status, 400, "bot check");
   assert.equal((await createIntent(refused, [], r, { website: "spam" })).status, 400, "honeypot");
   assert.equal((await createIntent(refused, [], { ...r, title: "x" })).status, 400, "invalid report rejected before upload");
   let c = await challenge(visitor);

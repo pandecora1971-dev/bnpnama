@@ -9,7 +9,6 @@ export async function GET() {
     const value = `${Date.now()}:${random()}`;
     return json({
       challenge: `${value}.${sign(`report:${value}`)}`,
-      siteKey: process.env.TURNSTILE_SITE_KEY || "",
       upload: { ...uploadLimits(), enabled: uploadsEnabled() },
     });
   } catch {

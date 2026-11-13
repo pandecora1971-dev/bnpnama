@@ -4,14 +4,16 @@ import { bn, categories, conditionalFields, today } from "@/lib/shared";
 import { ACCEPT_ATTRIBUTE, DEFAULT_LIMITS, MIME_TYPES, canonicalMime, type UploadLimits } from "@/lib/filetypes";
 import { postJson, uploadEvidence } from "@/lib/upload-client";
 import { sourceLinksProblem, splitSourceLinks } from "@/lib/source-links";
-import BotCheck from "./BotCheck";
 import LocationFields from "./LocationFields";
 import LocationPreview from "./LocationPreview";
 const megabytes = (bytes: number) => bn(Math.round(bytes / (1024 * 1024)));
-const BOT_CHECK_PENDING =
-  "জমা দেওয়ার আগে নিরাপত্তা যাচাই সম্পন্ন করুন। প্রয়োজনে যাচাইয়ের ঘরে টিক দিন।";
-// One attempt only: the bot token and form challenge are single-use, so a blind retry
-// would always fail with a misleading message.
+// The server accepts a form challenge between 1.5 s and 1 h after it was issued.
+const CHALLENGE_MIN_AGE_MS = 1600;
+const CHALLENGE_MAX_AGE_MS = 50 * 60 * 1000;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+type Challenge = { value: string; receivedAt: number };
+// One attempt only: the form challenge is single-use, so a blind retry would always
+// fail with a misleading message.
 async function postOnce(url: string, body: unknown) {
   let response: Response;
   try {
@@ -32,8 +34,7 @@ async function postOnce(url: string, body: unknown) {
 export default function ReportForm() {
   const [category, setCategory] = useState(""),
     [loc, setLoc] = useState({ division: "", district: "", upazila: "" });
-  const [challenge, setChallenge] = useState(""),
-    [error, setError] = useState(""),
+  const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [stage, setStage] = useState(""),
     [progress, setProgress] = useState<number | null>(null),
@@ -41,26 +42,17 @@ export default function ReportForm() {
     [uploadsOpen, setUploadsOpen] = useState(true),
     [receipt, setReceipt] = useState(""),
     [copied, setCopied] = useState(false);
-  const [siteKey, setSiteKey] = useState(""),
-    [botToken, setBotToken] = useState(""),
-    [botReset, setBotReset] = useState(0);
   const [accusedRows, setAccusedRows] = useState([0]);
   const nextAccusedId = useRef(1);
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const botCheckRef = useRef<HTMLDivElement>(null);
-  const waitingForBotCheck = Boolean(siteKey) && !botToken;
-  // The hint is only useful until the check passes; drop it as soon as it does.
-  useEffect(() => {
-    if (botToken) setError((current) => (current === BOT_CHECK_PENDING ? "" : current));
-  }, [botToken]);
+  const challenge = useRef<Challenge | null>(null);
   useEffect(() => {
     let active = true;
     fetch("/api/challenge", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (active) {
-          setChallenge(d.challenge || "");
-          setSiteKey(d.siteKey || "");
+          if (d.challenge) challenge.current = { value: d.challenge, receivedAt: Date.now() };
           if (d.upload) {
             setLimits(d.upload);
             setUploadsOpen(d.upload.enabled !== false);
@@ -79,6 +71,22 @@ export default function ReportForm() {
   useEffect(() => {
     if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [error]);
+  // Returns a challenge the server will accept: fetches a new one if it is missing or
+  // stale, and waits out the minimum age instead of failing.
+  async function usableChallenge() {
+    let current = challenge.current;
+    if (!current || Date.now() - current.receivedAt > CHALLENGE_MAX_AGE_MS) {
+      const response = await fetch("/api/challenge", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.challenge)
+        throw new Error(data.error || "ফর্ম লোড করা যায়নি। পেজটি আবার খুলুন।");
+      current = { value: data.challenge, receivedAt: Date.now() };
+    }
+    const remaining = CHALLENGE_MIN_AGE_MS - (Date.now() - current.receivedAt);
+    if (remaining > 0) await wait(remaining);
+    challenge.current = null; // single-use on the server
+    return current.value;
+  }
   async function submit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -120,16 +128,6 @@ export default function ReportForm() {
       setError(linkProblem);
       return;
     }
-    // The button stays clickable so a tap always explains what is missing.
-    if (!challenge) {
-      setError("ফর্ম এখনও লোড হচ্ছে। কয়েক সেকেন্ড পর আবার চেষ্টা করুন।");
-      return;
-    }
-    if (waitingForBotCheck) {
-      setError(BOT_CHECK_PENDING);
-      botCheckRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
     const files = form
       .getAll("evidence")
       .filter((x): x is File => x instanceof File && x.size > 0);
@@ -139,8 +137,7 @@ export default function ReportForm() {
     try {
       setStage("যাচাই করা হচ্ছে…");
       const intent = await postOnce("/api/uploads/intent", {
-        challenge,
-        botToken,
+        challenge: await usableChallenge(),
         website: form.get("website"),
         report,
         files: files.map((file) => ({
@@ -161,15 +158,6 @@ export default function ReportForm() {
       setReceipt(d.receipt);
     } catch (e) {
       setError(e instanceof Error ? e.message : "জমা দেওয়া যায়নি।");
-      setBotToken("");
-      setBotReset((value) => value + 1);
-      setChallenge("");
-      try {
-        const response = await fetch("/api/challenge", { cache: "no-store" });
-        const fresh = await response.json();
-        setChallenge(fresh.challenge || "");
-        setSiteKey(fresh.siteKey || "");
-      } catch {}
     } finally {
       window.removeEventListener("beforeunload", leaving);
       setStage("");
@@ -389,15 +377,6 @@ export default function ReportForm() {
               placeholder="ঘটনার সময়, স্থান, কী ঘটেছে এবং বিবরণ লিখুন (অতিরিক্ত)। অপ্রয়োজনীয় ব্যক্তিগত পরিচয় লিখবেন না।"
             />
           </label>
-          {/* Must stay visible: Turnstile sometimes asks the person to tick a box. */}
-          <div ref={botCheckRef}>
-            <BotCheck
-              siteKey={siteKey}
-              action="report"
-              resetKey={botReset}
-              onToken={setBotToken}
-            />
-          </div>
           <div className="jwr-hp" aria-hidden="true">
             <label>
               ওয়েবসাইট
