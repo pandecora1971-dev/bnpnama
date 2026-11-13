@@ -1,6 +1,6 @@
 import { currentActor, json, sameOrigin, serverFailure } from "@/lib/security";
 import { limitedJson } from "@/lib/uploads";
-import { ReviewError, reviewReport } from "@/lib/reports";
+import { ReviewError, deleteReport, reviewReport } from "@/lib/reports";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function PATCH(
@@ -18,5 +18,21 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof ReviewError) return json({ error: error.message }, error.status);
     return serverFailure("admin.review", error);
+  }
+}
+// Permanent removal; deleteReport enforces the super-admin role and writes the audit entry.
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const actor = sameOrigin(req) ? await currentActor() : null;
+    if (!actor) return json({ error: "লগইন করুন।" }, 401);
+    const { id } = await params;
+    await deleteReport(actor, id);
+    return json({ ok: true });
+  } catch (error) {
+    if (error instanceof ReviewError) return json({ error: error.message }, error.status);
+    return serverFailure("admin.delete", error);
   }
 }

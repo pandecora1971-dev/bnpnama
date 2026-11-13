@@ -10,6 +10,8 @@ import {
   type Report,
 } from "./shared";
 import { reportSchema } from "./validation";
+import { objectStore } from "./r2";
+import { logError } from "./log";
 
 // Explicit allow-list: accused details, notes, hashes and evidence can never reach a public query.
 const PUBLIC_COLUMNS =
@@ -287,4 +289,42 @@ export async function reviewReport(actor: Actor, id: string, b: Record<string, u
     if (row.status === "published" || b.status === "published") await bump(client);
     return { unchanged: false, updatedAt };
   });
+}
+/**
+ * Permanently removes a report. Super admin only. The row and everything linked to it (source
+ * links, accused details, supports, evidence records) go in one transaction together with an
+ * audit entry; the stored evidence files are removed afterwards. Repeating it is harmless.
+ */
+export async function deleteReport(actor: Actor, id: string) {
+  if (actor.role !== "superadmin") throw new ReviewError(403, "শুধু সুপার অ্যাডমিন রিপোর্ট মুছতে পারেন।");
+  let objectKeys: string[];
+  try {
+    objectKeys = await transaction(async (client) => {
+      const { rows } = await client.query<{ status: string; category: string; district: string }>(
+        "SELECT status,category,district FROM bnpnama.reports WHERE id=$1 FOR UPDATE",
+        [id],
+      );
+      const row = rows[0];
+      if (!row) throw new ReviewError(404, "রিপোর্টটি পাওয়া যায়নি; হয়তো আগেই মুছে ফেলা হয়েছে।");
+      const evidence = await client.query<{ object_key: string }>(
+        "SELECT object_key FROM bnpnama.evidence WHERE report_id=$1",
+        [id],
+      );
+      await client.query("DELETE FROM bnpnama.reports WHERE id=$1", [id]);
+      await audit(actor, "report.delete", id, JSON.stringify({ ...row, evidence: evidence.rowCount }), client);
+      if (row.status === "published") await bump(client);
+      return evidence.rows.map((e) => e.object_key);
+    });
+  } catch (error) {
+    // 42501: the database role has not been granted DELETE yet (migration 0003 not applied).
+    if ((error as { code?: string }).code === "42501")
+      throw new ReviewError(503, "ডাটাবেসে মুছে ফেলার অনুমতি এখনও চালু হয়নি। db/migrations/0003 প্রয়োগ করুন।");
+    throw error;
+  }
+  if (objectKeys.length) {
+    const store = objectStore();
+    const results = await Promise.allSettled(objectKeys.map((key) => store.remove(key)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) logError("admin.delete.evidence", new Error(`${failed} of ${objectKeys.length} evidence objects for ${id} were not removed`));
+  }
 }

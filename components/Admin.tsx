@@ -24,10 +24,12 @@ const PAGE_SIZE = 25;
 function Review({
   report: r,
   evidence,
+  canDelete,
   onSaved,
 }: {
   report: PrivateReport;
   evidence: Evidence[];
+  canDelete: boolean;
   onSaved: () => void;
 }) {
   const [title, setTitle] = useState(r.title),
@@ -53,6 +55,23 @@ function Review({
     } catch (e) {
       setError(e instanceof Error ? e.message : "সংরক্ষণ করা যায়নি।");
     } finally {
+      setBusy(false);
+    }
+  }
+  async function remove() {
+    const confirmed = window.confirm(
+      `"${r.title}" রিপোর্টটি স্থায়ীভাবে মুছে ফেলবেন?\n\nরিপোর্ট, অভিযুক্তের তথ্য, সংবাদসূত্র ও প্রমাণ ফাইল মুছে যাবে। এটি আর ফেরত আনা যাবে না।`,
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/reports/${r.id}`, { method: "DELETE" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw Error(d.error || "মুছে ফেলা যায়নি।");
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "মুছে ফেলা যায়নি।");
       setBusy(false);
     }
   }
@@ -209,6 +228,11 @@ function Review({
             onClick={() => void save("pending")}
           >
             আবার পর্যালোচনায় নিন
+          </button>
+        )}
+        {canDelete && (
+          <button className="admin-delete" disabled={busy} onClick={() => void remove()}>
+            স্থায়ীভাবে মুছুন
           </button>
         )}
       </div>
@@ -458,6 +482,7 @@ export default function Admin() {
                     key={`${r.id}-${r.status}`}
                     report={r}
                     evidence={evidence.filter((f) => f.report_id === r.id)}
+                    canDelete={role === "superadmin"}
                     onSaved={() => void load(tab)}
                   />
                 ))}

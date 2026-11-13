@@ -46,8 +46,10 @@ test("the application role cannot rewrite audit history or drop data", async () 
     await denied(client, "UPDATE bnpnama.audit_log SET detail='x'");
     await denied(client, "DELETE FROM bnpnama.audit_log");
     await denied(client, "TRUNCATE bnpnama.audit_log");
-    await denied(client, "DELETE FROM bnpnama.reports");
+    // Reports may be deleted (super-admin action, migration 0003); linked rows only via cascade.
     await denied(client, "DELETE FROM bnpnama.evidence");
+    await denied(client, "DELETE FROM bnpnama.accused");
+    await denied(client, "TRUNCATE bnpnama.reports");
     await assert.rejects(client.query("DROP TABLE bnpnama.reports"), /must be owner/);
     await assert.rejects(client.query("CREATE TABLE bnpnama.extra(id int)"), /permission denied/);
   } finally {
@@ -75,7 +77,7 @@ test("application roles carry timeouts and no elevated attributes", async () => 
 });
 test("migrations are versioned, checksummed and not re-applied", async () => {
   const { rows } = await admin.query("SELECT version FROM public.bnpnama_schema_migrations ORDER BY version");
-  assert.deepEqual(rows.map((r) => r.version), ["0001_schema.sql", "0002_access_control.sql"]);
+  assert.deepEqual(rows.map((r) => r.version), ["0001_schema.sql", "0002_access_control.sql", "0003_report_delete.sql"]);
 });
 test("common public queries use their indexes at realistic volume, including Bangla search", async () => {
   const client = await admin.connect();
