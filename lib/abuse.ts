@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { rateLimit } from "./db";
+import { isLocalHostname, trustedHostnames } from "./origins";
 import {
   cookieOptions,
   hash,
@@ -69,16 +70,23 @@ export function acquire(scope: string, max: number) {
     }
   };
 }
+type SiteverifyResult = {
+  success?: boolean;
+  action?: string;
+  hostname?: string;
+  "error-codes"?: string[];
+};
+// Logs why a token was refused (never the token itself) so failures can be diagnosed.
+function botRejected(reason: string, detail: Record<string, unknown> = {}) {
+  console.warn(JSON.stringify({ level: "warn", scope: "turnstile", reason, ...detail }));
+  return false;
+}
 export async function verifyBot(token: unknown, action: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) return process.env.NODE_ENV !== "production";
-  if (
-    typeof token !== "string" ||
-    !token ||
-    token.length > 2048 ||
-    !process.env.PUBLIC_ORIGIN
-  )
-    return false;
+  if (typeof token !== "string" || !token || token.length > 2048)
+    return botRejected("missing-token");
+  let result: SiteverifyResult;
   try {
     const response = await fetch(
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
@@ -89,14 +97,17 @@ export async function verifyBot(token: unknown, action: string) {
         signal: AbortSignal.timeout(6000),
       },
     );
-    if (!response.ok) return false;
-    const result = await response.json();
-    return (
-      result.success === true &&
-      result.action === action &&
-      result.hostname === new URL(process.env.PUBLIC_ORIGIN).hostname
-    );
-  } catch {
-    return false;
+    if (!response.ok) return botRejected("siteverify-http", { status: response.status });
+    result = await response.json();
+  } catch (error) {
+    return botRejected("siteverify-unreachable", { error: error instanceof Error ? error.name : "unknown" });
   }
+  if (result.success !== true)
+    return botRejected("not-solved", { codes: result["error-codes"] ?? [] });
+  if (result.action !== action)
+    return botRejected("wrong-action", { expected: action, got: result.action });
+  const hostname = result.hostname ?? "";
+  if (!trustedHostnames().has(hostname) && !(process.env.NODE_ENV !== "production" && isLocalHostname(hostname)))
+    return botRejected("wrong-hostname", { hostname });
+  return true;
 }

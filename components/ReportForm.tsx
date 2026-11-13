@@ -3,11 +3,30 @@ import { useEffect, useState, useRef } from "react";
 import { bn, categories, conditionalFields, today } from "@/lib/shared";
 import { ACCEPT_ATTRIBUTE, DEFAULT_LIMITS, MIME_TYPES, canonicalMime, type UploadLimits } from "@/lib/filetypes";
 import { postJson, uploadEvidence } from "@/lib/upload-client";
-import { splitSourceLinks } from "@/lib/source-links";
+import { sourceLinksProblem, splitSourceLinks } from "@/lib/source-links";
 import BotCheck from "./BotCheck";
 import LocationFields from "./LocationFields";
 import LocationPreview from "./LocationPreview";
 const megabytes = (bytes: number) => bn(Math.round(bytes / (1024 * 1024)));
+// One attempt only: the bot token and form challenge are single-use, so a blind retry
+// would always fail with a misleading message.
+async function postOnce(url: string, body: unknown) {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("ইন্টারনেট সংযোগ পাওয়া যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।");
+  }
+  const data = await response.json().catch(() => ({}));
+  if (response.ok) return data;
+  if (response.status === 429)
+    throw new Error("অল্প সময়ে অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+  throw new Error(data.error || "জমা দেওয়া যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+}
 export default function ReportForm() {
   const [category, setCategory] = useState(""),
     [loc, setLoc] = useState({ division: "", district: "", upazila: "" });
@@ -25,6 +44,8 @@ export default function ReportForm() {
     [botReset, setBotReset] = useState(0);
   const [accusedRows, setAccusedRows] = useState([0]);
   const nextAccusedId = useRef(1);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const waitingForBotCheck = Boolean(siteKey) && !botToken;
   useEffect(() => {
     let active = true;
     fetch("/api/challenge", { cache: "no-store" })
@@ -47,10 +68,13 @@ export default function ReportForm() {
       active = false;
     };
   }, []);
+  // Errors render in the sticky footer; on a phone the person may be far up the form.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [error]);
   async function submit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setBusy(true);
     const form = new FormData(e.currentTarget),
       facts: Record<string, string> = {};
     for (const field of conditionalFields[category] || []) {
@@ -84,29 +108,29 @@ export default function ReportForm() {
       accused,
       sourceLinks: splitSourceLinks(String(form.get("sourceLinks") || "")),
     };
+    const linkProblem = sourceLinksProblem(report.sourceLinks);
+    if (linkProblem) {
+      setError(linkProblem);
+      return;
+    }
     const files = form
       .getAll("evidence")
       .filter((x): x is File => x instanceof File && x.size > 0);
+    setBusy(true);
     const leaving = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", leaving);
     try {
       setStage("যাচাই করা হচ্ছে…");
-      const res = await fetch("/api/uploads/intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            challenge,
-            botToken,
-            website: form.get("website"),
-            report,
-            files: files.map((file) => ({
-              mime: canonicalMime(file.type, file.name) || file.type,
-              size: file.size,
-            })),
-          }),
-        }),
-        intent = await res.json();
-      if (!res.ok) throw new Error(intent.error);
+      const intent = await postOnce("/api/uploads/intent", {
+        challenge,
+        botToken,
+        website: form.get("website"),
+        report,
+        files: files.map((file) => ({
+          mime: canonicalMime(file.type, file.name) || file.type,
+          size: file.size,
+        })),
+      });
       let fileIds: string[] = [];
       if (files.length) {
         setStage("প্রমাণ আপলোড হচ্ছে…");
@@ -378,8 +402,13 @@ export default function ReportForm() {
           </p>
         )}
         {error && (
-          <p className="error" role="alert">
+          <p className="error" role="alert" ref={errorRef}>
             {error}
+          </p>
+        )}
+        {!busy && !error && waitingForBotCheck && (
+          <p className="muted" role="status">
+            উপরের নিরাপত্তা যাচাই শেষ হলে জমা দেওয়ার বোতাম চালু হবে।
           </p>
         )}
         <div className="report-submit-row">
@@ -391,7 +420,7 @@ export default function ReportForm() {
           <button
             type="submit"
             className="jwr-button"
-            disabled={busy || !challenge || (!!siteKey && !botToken)}
+            disabled={busy || !challenge || waitingForBotCheck}
           >
             {busy ? stage || "জমা হচ্ছে…" : "রিপোর্ট জমা দিন →"}
           </button>

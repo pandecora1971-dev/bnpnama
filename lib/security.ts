@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { query, pool, databaseUnavailable, type Queryable } from "./db";
 import { productionReady } from "./production-config.mjs";
 import { logError } from "./log";
+import { isLocalHostname, trustedHosts } from "./origins";
 import { cookies } from "next/headers";
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export const random = () => randomBytes(24).toString("hex");
@@ -79,22 +80,11 @@ export function sameOrigin(req: Request) {
   try {
     const originUrl = new URL(origin);
     const reqHost = req.headers.get("host") || new URL(req.url).host;
-    if (originUrl.host === reqHost) return true;
-    if (process.env.PUBLIC_ORIGIN) {
-      try {
-        if (originUrl.host === new URL(process.env.PUBLIC_ORIGIN).host) return true;
-      } catch {}
-    }
-    if (
-      originUrl.host.endsWith(".vercel.app") ||
-      originUrl.host === "bnpnama.digital" ||
-      originUrl.host === "www.bnpnama.digital" ||
-      originUrl.hostname === "localhost" ||
-      originUrl.hostname === "127.0.0.1"
-    ) {
-      return true;
-    }
-    return false;
+    return (
+      originUrl.host === reqHost ||
+      trustedHosts().has(originUrl.host) ||
+      (process.env.NODE_ENV !== "production" && isLocalHostname(originUrl.hostname))
+    );
   } catch {
     return false;
   }

@@ -154,6 +154,10 @@ test("bot verification fails closed on provider errors and checks hostname and a
         action: "report",
       });
     assert.equal(await verifyBot("token", "report"), true);
+    // The apex redirects to www, so a token solved on the www page must be accepted too.
+    globalThis.fetch = async () =>
+      Response.json({ success: true, hostname: "www.example.com", action: "report" });
+    assert.equal(await verifyBot("token", "report"), true);
     globalThis.fetch = async () => {
       throw Error("offline");
     };

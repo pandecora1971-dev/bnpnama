@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { categories, conditionalFields, normalizeWard, today } from "./shared";
 import locations from "../public/data/locations.json";
-import { normalizeSourceLink } from "./source-links";
+import { MAX_SOURCE_LINKS, isAcceptableSourceLink, normalizeSourceLink } from "./source-links";
 export const accusedSchema = z
   .array(
     z
@@ -27,22 +27,9 @@ export const sourceLinksSchema = z
       .string()
       .max(2000)
       .transform(normalizeSourceLink)
-      .pipe(z.string().url("সঠিক সংবাদলিংক দিন। যেমন: https://www.prothomalo.com/…"))
-      .refine((value) => {
-        try {
-          const url = new URL(value);
-          return (
-            ["http:", "https:"].includes(url.protocol) &&
-            url.hostname.includes(".") &&
-            !url.username &&
-            !url.password
-          );
-        } catch {
-          return false;
-        }
-      }, "শুধু http বা https সংবাদলিংক দিন, লগইন তথ্য ছাড়া।"),
+      .refine(isAcceptableSourceLink, "সঠিক সংবাদলিংক দিন। যেমন: https://www.prothomalo.com/…"),
   )
-  .max(5, "সর্বোচ্চ ৫টি সংবাদলিংক দিন।");
+  .max(MAX_SOURCE_LINKS, "সর্বোচ্চ ৫টি সংবাদলিংক দিন।");
 export const reportSchema = z
   .object({
     category: z
