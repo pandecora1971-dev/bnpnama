@@ -47,11 +47,15 @@ test("public responses never contain private fields, unpublished reports or accu
     getDetail(url(`/api/reports/${id}`), { params: Promise.resolve({ id }) }),
     getStats(url("/api/stats")),
   ]);
-  for (const response of responses) {
-    const text = await response.text();
-    for (const secret of ["গোপন", "aaaaaaaa", "receipt", "fingerprint", "review", "accused", "private.example", "প্রকাশ-না-হওয়া", "search_text"])
+  const texts = await Promise.all(responses.map((response) => response.text()));
+  for (const text of texts) {
+    for (const secret of ["গোপন", "aaaaaaaa", "receipt", "fingerprint", "review", "accused", "প্রকাশ-না-হওয়া", "search_text"])
       assert.equal(text.includes(secret), false, secret);
   }
+  // Source links of a published report appear only in its detail, never in the list or stats.
+  assert.equal(texts[0].includes("private.example"), false, "list");
+  assert.deepEqual(JSON.parse(texts[1]).report.sourceLinks, ["https://private.example/x"]);
+  assert.equal(texts[2].includes("private.example"), false, "stats");
   const detail = await getDetail(url(`/api/reports/${hidden}`), { params: Promise.resolve({ id: hidden }) });
   assert.equal(detail.status, 404);
 });

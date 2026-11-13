@@ -72,6 +72,8 @@ export type Report = {
   supports: number;
   demo?: boolean;
   evidenceCount?: number;
+  /** News links the reporter gave. Only the single-report detail response includes them. */
+  sourceLinks?: string[];
 };
 export type PublicStats = {
   total: number;

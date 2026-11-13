@@ -10,6 +10,7 @@ import {
   type Report,
 } from "./shared";
 import { reportSchema } from "./validation";
+import { isAcceptableSourceLink } from "./source-links";
 import { objectStore } from "./r2";
 import { logError } from "./log";
 
@@ -123,11 +124,15 @@ export async function listPublished(filter: ReportFilter, limit: number, cursor?
 }
 export async function publishedReport(id: string) {
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(id)) return null;
-  const { rows } = await query<PublicRow>(
-    `SELECT ${PUBLIC_COLUMNS} FROM bnpnama.reports WHERE id=$1 AND status='published'`,
-    [id],
-  );
-  return rows[0] ? toPublic(rows[0]) : null;
+  const [{ rows }, links] = await Promise.all([
+    query<PublicRow>(`SELECT ${PUBLIC_COLUMNS} FROM bnpnama.reports WHERE id=$1 AND status='published'`, [id]),
+    // Only links of a published report: the join keeps pending or rejected reports' links private.
+    query<{ url: string }>(
+      "SELECT l.url FROM bnpnama.source_links l JOIN bnpnama.reports r ON r.id=l.report_id WHERE l.report_id=$1 AND r.status='published' ORDER BY l.position",
+      [id],
+    ),
+  ]);
+  return rows[0] ? { ...toPublic(rows[0]), sourceLinks: links.rows.map((l) => l.url).filter(isAcceptableSourceLink) } : null;
 }
 export async function publicStats(filter: ReportFilter): Promise<PublicStats> {
   const params: unknown[] = [];
