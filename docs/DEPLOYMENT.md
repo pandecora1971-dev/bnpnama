@@ -65,7 +65,7 @@ ClamAV needs a long-running host, so it cannot run on Vercel. **Uploads stay in 
 
 1. **R2 → Create bucket**, for example `bnpnama-evidence`, Standard class. Choose a location hint near your users. Create `bnpnama-evidence-backup` as well if you take the backup in section 9.
 2. Bucket **Settings → Public access:** keep **R2.dev subdomain disabled** and add **no custom domain**. Any public route to this bucket would expose raw evidence.
-3. **Settings → CORS policy:** paste `docs/r2-cors.json` with `https://YOUR-PRODUCTION-DOMAIN` replaced. List only your exact origins. Add a staging origin only on the staging bucket.
+3. **Settings → CORS policy:** paste `docs/r2-cors.json`. It lists both `https://www.bnpnama.digital` and `https://bnpnama.digital`, because the apex redirects to www; without the exact page origin, browsers block every evidence upload (it stalls at 100%, then fails). List only your exact origins. Add a staging origin only on the staging bucket.
 4. **Settings → Object lifecycle:** add a rule to **abort incomplete multipart uploads after 2 days** with no prefix. Do **not** add a delete-objects rule for `quarantine/` or `evidence/`: a scanner outage could then destroy unscanned evidence. Maintenance cleans abandoned objects by name.
 5. **R2 → Manage API tokens → Create:** **Object Read & Write**, scoped to this bucket only. It gives `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. The secret is shown once. Use a separate token for the scan worker and one covering both buckets for backups, kept on your own machine.
 

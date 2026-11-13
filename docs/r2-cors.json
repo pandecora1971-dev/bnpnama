@@ -1,6 +1,6 @@
 [
   {
-    "AllowedOrigins": ["https://YOUR-PRODUCTION-DOMAIN"],
+    "AllowedOrigins": ["https://www.bnpnama.digital", "https://bnpnama.digital"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["content-type", "if-none-match"],
     "ExposeHeaders": [],
