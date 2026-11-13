@@ -316,9 +316,20 @@ export async function deleteReport(actor: Actor, id: string) {
       return evidence.rows.map((e) => e.object_key);
     });
   } catch (error) {
-    // 42501: the database role has not been granted DELETE yet (migration 0003 not applied).
-    if ((error as { code?: string }).code === "42501")
-      throw new ReviewError(503, "ডাটাবেসে মুছে ফেলার অনুমতি এখনও চালু হয়নি। db/migrations/0003 প্রয়োগ করুন।");
+    // 42501: the connected database role lacks a privilege (migration 0003 not applied to it).
+    // Only the super admin reaches this, so naming the role and the refused object is safe and
+    // is exactly what is needed to grant the right privilege.
+    if ((error as { code?: string }).code === "42501") {
+      logError("admin.delete.permission", error);
+      const role = await query<{ role: string }>("SELECT current_user AS role")
+        .then((r) => r.rows[0]?.role ?? "?")
+        .catch(() => "?");
+      const detail = error instanceof Error ? error.message : "";
+      throw new ReviewError(
+        503,
+        `ডাটাবেসে মুছে ফেলার অনুমতি নেই (ডাটাবেস ইউজার: ${role}; ${detail})। এই ইউজারকে GRANT DELETE ON bnpnama.reports দিন।`,
+      );
+    }
     throw error;
   }
   if (objectKeys.length) {
