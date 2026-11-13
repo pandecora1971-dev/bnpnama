@@ -6116,6 +6116,7 @@ section[id] {
 
 .jwr-form > .bot-check { grid-column: 1 / -1; min-width: 0; max-width: 100%; }
 .bot-check { margin-block: 12px; }
+.bot-check-retry { margin-top: 6px; padding: 6px 12px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 
 /* Clear, original cartoon scenes for the main-site hero. */
 .hero-cartoons .hero-story-frame svg { font-family: inherit; overflow: visible; }

@@ -348,13 +348,14 @@ export default function ReportForm() {
               placeholder="ঘটনার সময়, স্থান, কী ঘটেছে এবং বিবরণ লিখুন (অতিরিক্ত)। অপ্রয়োজনীয় ব্যক্তিগত পরিচয় লিখবেন না।"
             />
           </label>
+          {/* Must stay visible: Turnstile sometimes asks the person to tick a box. */}
+          <BotCheck
+            siteKey={siteKey}
+            action="report"
+            resetKey={botReset}
+            onToken={setBotToken}
+          />
           <div className="jwr-hp" aria-hidden="true">
-            <BotCheck
-              siteKey={siteKey}
-              action="report"
-              resetKey={botReset}
-              onToken={setBotToken}
-            />
             <label>
               ওয়েবসাইট
               <input name="website" tabIndex={-1} autoComplete="off" />
