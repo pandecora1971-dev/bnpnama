@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { categories, conditionalFields, normalizeWard, today } from "./shared";
 import locations from "../public/data/locations.json";
+import { normalizeSourceLink } from "./source-links";
 export const accusedSchema = z
   .array(
     z
@@ -24,14 +25,15 @@ export const sourceLinksSchema = z
   .array(
     z
       .string()
-      .trim()
       .max(2000)
-      .url("সঠিক সংবাদলিংক দিন।")
+      .transform(normalizeSourceLink)
+      .pipe(z.string().url("সঠিক সংবাদলিংক দিন। যেমন: https://www.prothomalo.com/…"))
       .refine((value) => {
         try {
           const url = new URL(value);
           return (
             ["http:", "https:"].includes(url.protocol) &&
+            url.hostname.includes(".") &&
             !url.username &&
             !url.password
           );

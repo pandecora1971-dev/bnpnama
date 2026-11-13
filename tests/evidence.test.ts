@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { audioMime } from "../lib/audio";
 import { sourceLinksSchema } from "../lib/validation";
+import { splitSourceLinks } from "../lib/source-links";
 import { normalizeCategory, categories } from "../lib/shared";
 
 test("accepts bounded web source links but rejects unsafe protocols and credentials", () => {
@@ -17,6 +18,13 @@ test("accepts bounded web source links but rejects unsafe protocols and credenti
     Array(6).fill("https://example.com"),
   ])
     assert.equal(sourceLinksSchema.safeParse(links).success, false);
+});
+test("accepts news links typed without https:// and split by spaces", () => {
+  assert.deepEqual(
+    sourceLinksSchema.parse(splitSourceLinks("www.prothomalo.com/bangladesh/abc\nprothomalo.com https://bn.wikipedia.org/wiki/বাংলাদেশ।")),
+    ["https://www.prothomalo.com/bangladesh/abc", "https://prothomalo.com", "https://bn.wikipedia.org/wiki/বাংলাদেশ"],
+  );
+  assert.deepEqual(splitSourceLinks("প্রথম আলো লিংক: www.jugantor.com/x"), ["https://www.jugantor.com/x"]);
 });
 test("unifies legacy theft and robbery metrics without modifying originals", () => {
   const facts = { theft_amount: "500", victim_count: "2" };

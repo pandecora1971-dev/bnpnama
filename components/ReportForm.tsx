@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { bn, categories, conditionalFields, today } from "@/lib/shared";
 import { ACCEPT_ATTRIBUTE, DEFAULT_LIMITS, MIME_TYPES, canonicalMime, type UploadLimits } from "@/lib/filetypes";
 import { postJson, uploadEvidence } from "@/lib/upload-client";
+import { splitSourceLinks } from "@/lib/source-links";
 import BotCheck from "./BotCheck";
 import LocationFields from "./LocationFields";
 import LocationPreview from "./LocationPreview";
@@ -81,10 +82,7 @@ export default function ReportForm() {
       declaration: form.get("declaration"),
       facts,
       accused,
-      sourceLinks: String(form.get("sourceLinks") || "")
-        .split(/\r?\n/)
-        .map((link) => link.trim())
-        .filter(Boolean),
+      sourceLinks: splitSourceLinks(String(form.get("sourceLinks") || "")),
     };
     const files = form
       .getAll("evidence")
