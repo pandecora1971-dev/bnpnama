@@ -8,6 +8,8 @@ import BotCheck from "./BotCheck";
 import LocationFields from "./LocationFields";
 import LocationPreview from "./LocationPreview";
 const megabytes = (bytes: number) => bn(Math.round(bytes / (1024 * 1024)));
+const BOT_CHECK_PENDING =
+  "জমা দেওয়ার আগে নিরাপত্তা যাচাই সম্পন্ন করুন। প্রয়োজনে যাচাইয়ের ঘরে টিক দিন।";
 // One attempt only: the bot token and form challenge are single-use, so a blind retry
 // would always fail with a misleading message.
 async function postOnce(url: string, body: unknown) {
@@ -45,7 +47,12 @@ export default function ReportForm() {
   const [accusedRows, setAccusedRows] = useState([0]);
   const nextAccusedId = useRef(1);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const botCheckRef = useRef<HTMLDivElement>(null);
   const waitingForBotCheck = Boolean(siteKey) && !botToken;
+  // The hint is only useful until the check passes; drop it as soon as it does.
+  useEffect(() => {
+    if (botToken) setError((current) => (current === BOT_CHECK_PENDING ? "" : current));
+  }, [botToken]);
   useEffect(() => {
     let active = true;
     fetch("/api/challenge", { cache: "no-store" })
@@ -111,6 +118,16 @@ export default function ReportForm() {
     const linkProblem = sourceLinksProblem(report.sourceLinks);
     if (linkProblem) {
       setError(linkProblem);
+      return;
+    }
+    // The button stays clickable so a tap always explains what is missing.
+    if (!challenge) {
+      setError("ফর্ম এখনও লোড হচ্ছে। কয়েক সেকেন্ড পর আবার চেষ্টা করুন।");
+      return;
+    }
+    if (waitingForBotCheck) {
+      setError(BOT_CHECK_PENDING);
+      botCheckRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     const files = form
@@ -373,12 +390,14 @@ export default function ReportForm() {
             />
           </label>
           {/* Must stay visible: Turnstile sometimes asks the person to tick a box. */}
-          <BotCheck
-            siteKey={siteKey}
-            action="report"
-            resetKey={botReset}
-            onToken={setBotToken}
-          />
+          <div ref={botCheckRef}>
+            <BotCheck
+              siteKey={siteKey}
+              action="report"
+              resetKey={botReset}
+              onToken={setBotToken}
+            />
+          </div>
           <div className="jwr-hp" aria-hidden="true">
             <label>
               ওয়েবসাইট
@@ -406,11 +425,6 @@ export default function ReportForm() {
             {error}
           </p>
         )}
-        {!busy && !error && waitingForBotCheck && (
-          <p className="muted" role="status">
-            উপরের নিরাপত্তা যাচাই শেষ হলে জমা দেওয়ার বোতাম চালু হবে।
-          </p>
-        )}
         <div className="report-submit-row">
           <p className="form-footnote">
             অভিযোগ জমা দেওয়া অপরাধ প্রমাণ করে না।
@@ -420,7 +434,7 @@ export default function ReportForm() {
           <button
             type="submit"
             className="jwr-button"
-            disabled={busy || !challenge || waitingForBotCheck}
+            disabled={busy}
           >
             {busy ? stage || "জমা হচ্ছে…" : "রিপোর্ট জমা দিন →"}
           </button>
